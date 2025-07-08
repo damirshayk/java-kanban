@@ -1,54 +1,91 @@
 package com.yandex.app.model;
 
-import java.util.Objects;
-
+/**
+ * Базовый класс Task. Представляет задачу с названием, описанием, статусом и id.
+ */
 public class Task {
-    // ну да, private защищает поля отовсюду вне этого класса. Нужны гетеры/сеттеры
+    /**
+     * Ну да, private защищает поля отовсюду вне этого класса. Нужны гетеры/сеттеры
+     */
     private String     title;
     private String     description;
     private int        id;
     private TaskStatus status;
 
     public Task(String title, String description, TaskStatus status) {
-        this.title = title;             //Название
-        this.description = description; //Описание
-        this.status = status;           // Статус
+        this.title = title;
+        this.description = description;
+        this.status = status;
     }
 
+    public Task(Task other) {
+        this.setTitle(other.getTitle());
+        this.setDescription(other.getDescription());
+        this.setStatus(other.getStatus());
+        this.setId(other.getId());
+    }
+
+    /**
+     * Получает наименование
+     */
     public String getTitle() {
         return title;
     }
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
+    /**
+     * Получает описание
+     */
     public String getDescription() {
         return description;
     }
 
+    /**
+     * Получает id
+     */
+    public int getId() {
+        return id;
+    }
+
+    /**
+     * Получает статус
+     */
+    public TaskStatus getStatus() {
+        return status;
+    }
+
+    /**
+     * Меняет наименование
+     */
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    /**
+     * Меняет описание
+     */
     public void setDescription(String description) {
         this.description = description;
     }
 
+    /**
+     * Меняет id
+     */
     public void setId(int id) {  // Сеттер id (вызывается менеджером)
         this.id = id;
     }
 
-    public int getId() {                        //Получение id
-        return id;
-    }
-
-    public TaskStatus getStatus() {             //Получение статуса
-        return status;
-    }
-
-    public void setStatus(TaskStatus status) {  //Изменение статуса
+    /**
+     * Меняет статус
+     */
+    public void setStatus(TaskStatus status) {
         this.status = status;
     }
 
+    /**
+     * Переопределение toString для отладки
+     */
     @Override
-    public String toString() {                  //Переопределил toString для отладки
+    public String toString() {
         return "Task{" +
                 "title='" + title + '\'' +
                 ", description='" + description + '\'' +
@@ -57,24 +94,19 @@ public class Task {
                 '}';
     }
 
-    /*Эта автогенерация equals отличается от того что мы проходили в - [Спринт 4/24: 4. (02.06 - 16.06) 🟢 → Тема 3/5:
-    Класс Object и его методы → Урок 3/8: Сравниваем объекты с помощью equals(Object)].
-
-    object instanceof Task task одновременно:
-        1. Проверяет, что object — это объект класса Task или его наследник.
-        *if (this == object) return true;*
-        2. Автоматически приводит его к переменной task (если проверка успешна).
-        *Task task = (Task) object;*
-    Если object не является Task, метод сразу возвращает false. */
-
     @Override
     public boolean equals(Object object) {
         if (!(object instanceof Task task)) return false;
-        return id == task.id; //В целом, id у нас уникален. Можно проверять только по нему
+        return getId() == task.getId();
     }
 
     @Override
-    public int hashCode() { //Хеш генерируется только по id, так как equals сравнивает только id
-        return Objects.hash(id);
+    public int hashCode() {
+        return Integer.hashCode(getId());
+    }
+
+    @Override
+    public Task clone() {
+        return new Task(this);
     }
 }
