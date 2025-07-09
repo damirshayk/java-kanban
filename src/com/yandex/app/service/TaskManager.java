@@ -1,6 +1,9 @@
 package com.yandex.app.service;
 
-import com.yandex.app.model.*;
+import com.yandex.app.model.Epic;
+import com.yandex.app.model.Subtask;
+import com.yandex.app.model.Task;
+
 import java.util.List;
 
 /**
@@ -16,9 +19,9 @@ public interface TaskManager {
     List<Epic> getAllEpics();
     List<Subtask> getAllSubtasks();
 
-    void getTaskById(int id);
-    void getEpicById(int id);
-    void getSubtaskById(int id);
+    Task getTaskById(int id);
+    Epic getEpicById(int id);
+    Subtask getSubtaskById(int id);
 
     void updateTask(Task task);
     void updateEpic(Epic epic);

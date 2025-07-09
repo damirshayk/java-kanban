@@ -1,8 +1,9 @@
 package com.yandex.app.service;
 
-import com.yandex.app.model.*;
+import com.yandex.app.model.Task;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -15,17 +16,25 @@ public class InMemoryHistoryManager implements HistoryManager {
     private static final int MAX_HISTORY_SIZE = 10;
 
     /** Список, хранящий историю просмотренных задач. */
-    private final List<Task> history = new ArrayList<>();
+    private final List<Task> history = new LinkedList<>();
+    /* Я знал про LinkedList, идея подсветила момент с remove(0).
+    Было уже час ночи, а вставать в 6:30. Я забыл подправить эти места. Интернета не было 3 дня, я догонял всех как мог.
+     */
 
     /**
-     * Добавляет задачу в историю просмотров.
+     * Добавляет задачу в историю просмотров. Проверяет аргумент на null.
      * Если достигнут максимальный размер истории, удаляет самый старый просмотр.
      */
     @Override
     public void add(Task task) {
+        // Проверка на null. Так будет понятней, где ошибка
+        if (task == null) {
+            throw new IllegalArgumentException("[" + getClass().getName() + ".add] не может быть null.");
+        }
+
         // Проверяем, достигнут ли лимит истории
         if (history.size() == MAX_HISTORY_SIZE) {
-            history.remove(0); // Удаляем первый (наиболее старый) элемент списка
+            history.removeFirst(); // Удаляем первый (наиболее старый) элемент списка
         }
         history.add(task.clone()); // Добавляем задачу в конец списка как последнюю просмотренную
     }

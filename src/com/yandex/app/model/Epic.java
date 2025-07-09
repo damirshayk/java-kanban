@@ -29,6 +29,7 @@ public class Epic extends Task {
 
     /**
      * Добавляет id в список подзадач эпика.
+     * @throws IllegalArgumentException если переданный id совпадает с id самого эпика
      */
     public void addSubtaskId(int id) {
         if (id == this.getId()) {
