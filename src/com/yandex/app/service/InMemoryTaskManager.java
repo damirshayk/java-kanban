@@ -22,8 +22,8 @@ public class InMemoryTaskManager implements TaskManager {
     /**
      * Хранилища задач по типам
      */
-    private final Map<Integer, Task>    tasks    = new HashMap<>();
-    private final Map<Integer, Epic>    epics    = new HashMap<>();
+    private final Map<Integer, Task> tasks = new HashMap<>();
+    private final Map<Integer, Epic> epics = new HashMap<>();
     private final Map<Integer, Subtask> subtasks = new HashMap<>();
 
     /**
@@ -49,7 +49,7 @@ public class InMemoryTaskManager implements TaskManager {
         if (task == null) {
             throw new IllegalArgumentException("[" + getClass().getName() + ".addTask] не может быть null.");
         }
-        int id = task.getId() > 0 ? task.getId():generateId();
+        int id = task.getId() > 0 ? task.getId() : generateId();
         if (task.getId() >= nextId) {
             nextId = task.getId() + 1;
         }
@@ -73,7 +73,7 @@ public class InMemoryTaskManager implements TaskManager {
         if (epic == null) {
             throw new IllegalArgumentException("[" + getClass().getName() + ".addEpic] не может быть null.");
         }
-        int id = epic.getId() > 0 ? epic.getId():generateId();
+        int id = epic.getId() > 0 ? epic.getId() : generateId();
         if (epic.getId() >= nextId) {
             nextId = epic.getId() + 1;
         }
@@ -107,7 +107,7 @@ public class InMemoryTaskManager implements TaskManager {
             throw new IllegalArgumentException("Epic с id " + subtask.getEpicId() + " не найден.");
         }
 
-        int id = subtask.getId() > 0 ? subtask.getId():generateId();
+        int id = subtask.getId() > 0 ? subtask.getId() : generateId();
         if (subtask.getId() >= nextId) {
             nextId = subtask.getId() + 1;
         }
@@ -399,8 +399,12 @@ public class InMemoryTaskManager implements TaskManager {
             if (status != TaskStatus.DONE) allDone = false;
         }
 
-        if (allDone) {epic.setStatus(TaskStatus.DONE);}
-        else if (allNew) {epic.setStatus(TaskStatus.NEW);}
-        else {epic.setStatus(TaskStatus.IN_PROGRESS);}
+        if (allDone) {
+            epic.setStatus(TaskStatus.DONE);
+        } else if (allNew) {
+            epic.setStatus(TaskStatus.NEW);
+        } else {
+            epic.setStatus(TaskStatus.IN_PROGRESS);
+        }
     }
 }
