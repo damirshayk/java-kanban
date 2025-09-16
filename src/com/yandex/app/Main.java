@@ -63,6 +63,7 @@ public class Main {
         printAllTasks(manager);
     }
 
+    // Вспомогательный метод для печати всех задач и истории просмотров
     private static void printAllTasks(TaskManager manager) {
         System.out.println("\nЗадачи:");
         for (Task task : manager.getAllTasks()) {

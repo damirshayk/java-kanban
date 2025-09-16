@@ -7,17 +7,29 @@ public class Task {
     /**
      * Ну да, private защищает поля отовсюду вне этого класса. Нужны гетеры/сеттеры
      */
-    private String     title;
-    private String     description;
-    private int        id;
+    private String title;
+    private String description;
+    private int id;
     private TaskStatus status;
 
+    /**
+     * Конструктор для создания новой задачи.
+     *
+     * @param title       название задачи
+     * @param description описание задачи
+     * @param status      статус задачи
+     */
     public Task(String title, String description, TaskStatus status) {
         this.title = title;
         this.description = description;
         this.status = status;
     }
 
+    /**
+     * Конструктор копирования для создания новой задачи на основе существующей.
+     *
+     * @param other существующая задача для копирования
+     */
     public Task(Task other) {
         this.setTitle(other.getTitle());
         this.setDescription(other.getDescription());
@@ -27,6 +39,8 @@ public class Task {
 
     /**
      * Получает наименование
+     *
+     * @return наименование задачи
      */
     public String getTitle() {
         return title;
@@ -34,6 +48,8 @@ public class Task {
 
     /**
      * Получает описание
+     *
+     * @return описание задачи
      */
     public String getDescription() {
         return description;
@@ -41,6 +57,8 @@ public class Task {
 
     /**
      * Получает id
+     *
+     * @return id задачи
      */
     public int getId() {
         return id;
@@ -48,6 +66,8 @@ public class Task {
 
     /**
      * Получает статус
+     *
+     * @return статус задачи
      */
     public TaskStatus getStatus() {
         return status;
@@ -55,6 +75,8 @@ public class Task {
 
     /**
      * Меняет наименование
+     *
+     * @param title новое наименование задачи
      */
     public void setTitle(String title) {
         this.title = title;
@@ -62,6 +84,8 @@ public class Task {
 
     /**
      * Меняет описание
+     *
+     * @param description новое описание задачи
      */
     public void setDescription(String description) {
         this.description = description;
@@ -69,6 +93,8 @@ public class Task {
 
     /**
      * Меняет id
+     *
+     * @param id новый id задачи
      */
     public void setId(int id) {  // Сеттер id (вызывается менеджером)
         this.id = id;
@@ -76,6 +102,8 @@ public class Task {
 
     /**
      * Меняет статус
+     *
+     * @param status новый статус задачи
      */
     public void setStatus(TaskStatus status) {
         this.status = status;
@@ -83,6 +111,8 @@ public class Task {
 
     /**
      * Переопределение toString для отладки
+     *
+     * @return строковое представление задачи
      */
     @Override
     public String toString() {
@@ -94,17 +124,35 @@ public class Task {
                 '}';
     }
 
+    /**
+     * Переопределение equals и hashCode для корректного сравнения задач по id
+     * (важно для истории просмотров и других коллекций).
+     * Если id совпадают, считаем задачи одинаковыми.
+     *
+     * @return true если задачи равны по id
+     */
     @Override
     public boolean equals(Object object) {
         if (!(object instanceof Task task)) return false;
         return getId() == task.getId();
     }
 
+    /**
+     * Переопределение hashCode для корректной работы в хэш-коллекциях.
+     * Используем только id, так как он уникален для каждой задачи.
+     *
+     * @return хэш-код задачи
+     */
     @Override
     public int hashCode() {
         return Integer.hashCode(getId());
     }
 
+    /**
+     * Создает и возвращает копию текущего объекта Task.
+     *
+     * @return новая копия Task
+     */
     @Override
     public Task clone() {
         return new Task(this);

@@ -23,7 +23,8 @@ class InMemoryHistoryManagerTest {
         taskManager = Managers.getDefault();
     }
 
-    /** Проверяет добавление в историю.
+    /**
+     * Проверяет добавление в историю.
      */
     @Test
     void historyShouldAddTask() {
@@ -37,7 +38,8 @@ class InMemoryHistoryManagerTest {
         assertEquals(task.getId(), history.getFirst().getId(), "В истории должен быть правильный id задачи");
     }
 
-    /** Проверяет, что история не содержит дубликатов.
+    /**
+     * Проверяет, что история не содержит дубликатов.
      */
     @Test
     void historyDoesNotStoreDuplicates() {
@@ -51,7 +53,8 @@ class InMemoryHistoryManagerTest {
         assertEquals(1, history.size(), "История не должна содержать дубликаты");
     }
 
-    /** Проверяет удаление задачи из истории при её удалении из менеджера.
+    /**
+     * Проверяет удаление задачи из истории при её удалении из менеджера.
      */
     @Test
     void deletingTaskRemovesItFromHistory() {
@@ -67,7 +70,8 @@ class InMemoryHistoryManagerTest {
                 "История не должна содержать удалённую задачу");
     }
 
-    /** Проверяет, что при удалении эпика из менеджера, его подзадачи также удаляются из истории.
+    /**
+     * Проверяет, что при удалении эпика из менеджера, его подзадачи также удаляются из истории.
      */
     @Test
     void deletingEpicAlsoRemovesItsSubtasksFromHistory() {
@@ -91,7 +95,8 @@ class InMemoryHistoryManagerTest {
         assertFalse(history.contains(sub2), "Подзадачи эпика тоже должны удаляться из истории");
     }
 
-    /** Проверяет изменение статуса эпика в зависимости от статусов его подзадач.
+    /**
+     * Проверяет изменение статуса эпика в зависимости от статусов его подзадач.
      */
     @Test
     void epicStatusChangesBasedOnSubtasks() {
@@ -117,7 +122,8 @@ class InMemoryHistoryManagerTest {
                 "Если все подзадачи DONE, эпик должен быть DONE");
     }
 
-    /** Проверяет, что задачи, хранящиеся в менеджере, являются неизменяемыми извне.
+    /**
+     * Проверяет, что задачи, хранящиеся в менеджере, являются неизменяемыми извне.
      */
     @Test
     void tasksInManagerAreImmutable() {
@@ -135,7 +141,8 @@ class InMemoryHistoryManagerTest {
                 "Статус в менеджере не должен измениться");
     }
 
-    /** Проверяет, что у эпика нет подзадач после удаления всех его подзадач.
+    /**
+     * Проверяет, что у эпика нет подзадач после удаления всех его подзадач.
      */
     @Test
     void epicShouldNotContainDeletedSubtaskIds() {

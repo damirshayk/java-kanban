@@ -1,5 +1,7 @@
 package com.yandex.app.service;
+
 import com.yandex.app.model.Task;
+
 import java.util.*;
 
 /**
@@ -34,6 +36,7 @@ public class InMemoryHistoryManager implements HistoryManager {
      * Добавляет задачу в историю просмотров.
      * Если задача уже есть в истории, она перемещается в конец.
      * Если задача равна null, метод просто игнорирует её.
+     *
      * @param task
      */
     @Override
@@ -56,6 +59,7 @@ public class InMemoryHistoryManager implements HistoryManager {
 
     /**
      * Удаляет из истории задачу по id
+     *
      * @param id
      */
     @Override
@@ -68,6 +72,7 @@ public class InMemoryHistoryManager implements HistoryManager {
 
     /**
      * Возвращает список последних просмотренных задач.
+     *
      * @return список задач
      */
     @Override
@@ -83,6 +88,7 @@ public class InMemoryHistoryManager implements HistoryManager {
 
     /**
      * Добавляет узел в конец двусвязного списка
+     *
      * @return новый узел
      */
     private Node linkLast(Task task) {
@@ -99,6 +105,7 @@ public class InMemoryHistoryManager implements HistoryManager {
 
     /**
      * Удаляет узел из списка
+     *
      * @param node узел для удаления
      */
     private void removeNode(Node node) {
