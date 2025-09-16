@@ -15,13 +15,13 @@ public interface HistoryManager {
     void add(Task task);
 
     /**
-     * Возвращает список последних просмотренных задач.
-     */
-    List<Task> getHistory();
-
-    /**
      * Удаляет из истории задачу по id
      */
     void remove(int id);
 
+
+    /**
+     * Возвращает список последних просмотренных задач.
+     */
+    List<Task> getHistory();
 }

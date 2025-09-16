@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="com.obiscr.chatgpt.settings.EasyCodeState">
+    <option name="projectFiles" value="$PROJECT_DIR$/src/com/yandex/app/model/Epic.java;G:/Source/Game/Source/java-kanban/src/com/yandex/app/model/Subtask.java;G:/Source/Game/Source/java-kanban/src/com/yandex/app/model/Task.java;G:/Source/Game/Source/java-kanban/src/com/yandex/app/model/TaskStatus.java;G:/Source/Game/Source/java-kanban/src/com/yandex/app/service/HistoryManager.java;G:/Source/Game/Source/java-kanban/src/com/yandex/app/service/InMemoryHistoryManager.java;G:/Source/Game/Source/java-kanban/src/com/yandex/app/service/InMemoryTaskManager.java;G:/Source/Game/Source/java-kanban/src/com/yandex/app/service/Managers.java;G:/Source/Game/Source/java-kanban/src/com/yandex/app/service/TaskManager.java;G:/Source/Game/Source/java-kanban/src/com/yandex/app/Main.java;G:/Source/Game/Source/java-kanban/test/com/yandex/app/service/InMemoryTaskManagerTest.java;G:/Source/Game/Source/java-kanban/README.md" />
+  </component>
+</project>

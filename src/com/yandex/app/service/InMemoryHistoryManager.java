@@ -1,63 +1,120 @@
 package com.yandex.app.service;
-
 import com.yandex.app.model.Task;
-
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Класс InMemoryHistoryManager реализует интерфейс HistoryManager.
- * Хранит последние 10 просмотренных задач в памяти.
+ * Хранит историю просмотренных задач с использованием двусвязного списка и HashMap.
+ * Обеспечивает удаление и добавление за O(1).
  */
 public class InMemoryHistoryManager implements HistoryManager {
 
-    /** Максимальный размер истории просмотров. */
-    private static final int MAX_HISTORY_SIZE = 10;
+    // Узел двусвязного списка
+    private static class Node {
+        Task task;
+        Node prev;
+        Node next;
 
-    /** Список, хранящий историю просмотренных задач. */
-    private final List<Task> history = new LinkedList<>();
-    /* Я знал про LinkedList, идея подсветила момент с remove(0).
-    Было уже час ночи, а вставать в 6:30. Я забыл подправить эти места. Интернета не было 3 дня, я догонял всех как мог.
-     */
+        // Конструктор узла
+        Node(Node prev, Task task, Node next) {
+            this.prev = prev;
+            this.task = task;
+            this.next = next;
+        }
+    }
+
+    // Голова и хвост списка
+    private Node head;
+    private Node tail;
+
+    //Словарь: id задачи → узел списка
+    private final Map<Integer, Node> nodeMap = new HashMap<>();
 
     /**
-     * Добавляет задачу в историю просмотров. Проверяет аргумент на null.
-     * Если достигнут максимальный размер истории, удаляет самый старый просмотр.
+     * Добавляет задачу в историю просмотров.
+     * Если задача уже есть в истории, она перемещается в конец.
+     * Если задача равна null, метод просто игнорирует её.
+     * @param task
      */
     @Override
     public void add(Task task) {
-        // Проверка на null. Так будет понятней, где ошибка
         if (task == null) {
-            throw new IllegalArgumentException("[" + getClass().getName() + ".add] не может быть null.");
+            return; // просто игнорируем null
         }
 
-        // Проверяем, достигнут ли лимит истории
-        if (history.size() == MAX_HISTORY_SIZE) {
-            history.removeFirst(); // Удаляем первый (наиболее старый) элемент списка
+        // Если задача уже есть — удалим старый узел
+        if (nodeMap.containsKey(task.getId())) {
+            remove(task.getId());
         }
-        history.add(task.clone()); // Добавляем задачу в конец списка как последнюю просмотренную
+
+        // Создаём новый узел и добавляем его в конец списка
+        Node newNode = linkLast(task.clone());
+
+        // Обновляем словарь
+        nodeMap.put(task.getId(), newNode);
     }
 
     /**
-     * Возвращает копию списка истории просмотров задач.
-     */
-    @Override
-    public List<Task> getHistory() {
-        return new ArrayList<>(history);
-    }
-
-    /**
-     * Удаление задачи по id из истории
+     * Удаляет из истории задачу по id
+     * @param id
      */
     @Override
     public void remove(int id) {
-        for (int i = 0; i < history.size(); i++) {
-            if (history.get(i).getId() == id) {
-                history.remove(i);
-                break;
-            }
+        Node node = nodeMap.remove(id);
+        if (node != null) {
+            removeNode(node);
         }
     }
 
+    /**
+     * Возвращает список последних просмотренных задач.
+     * @return список задач
+     */
+    @Override
+    public List<Task> getHistory() {
+        List<Task> tasks = new ArrayList<>();
+        Node current = head;
+        while (current != null) {
+            tasks.add(current.task);
+            current = current.next;
+        }
+        return tasks;
+    }
+
+    /**
+     * Добавляет узел в конец двусвязного списка
+     * @return новый узел
+     */
+    private Node linkLast(Task task) {
+        Node oldTail = tail;
+        Node newNode = new Node(oldTail, task, null);
+        tail = newNode;
+        if (oldTail == null) {
+            head = newNode;
+        } else {
+            oldTail.next = newNode;
+        }
+        return newNode;
+    }
+
+    /**
+     * Удаляет узел из списка
+     * @param node узел для удаления
+     */
+    private void removeNode(Node node) {
+        Node prev = node.prev;
+        Node next = node.next;
+
+        if (prev == null) {
+            head = next;
+        } else {
+            prev.next = next;
+        }
+
+        if (next == null) {
+            tail = prev;
+        } else {
+            next.prev = prev;
+        }
+    }
 }
