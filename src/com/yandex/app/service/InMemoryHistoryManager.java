@@ -37,7 +37,7 @@ public class InMemoryHistoryManager implements HistoryManager {
      * Если задача уже есть в истории, она перемещается в конец.
      * Если задача равна null, метод просто игнорирует её.
      *
-     * @param task
+     * @param task задача для добавления в историю
      */
     @Override
     public void add(Task task) {
@@ -60,7 +60,7 @@ public class InMemoryHistoryManager implements HistoryManager {
     /**
      * Удаляет из истории задачу по id
      *
-     * @param id
+     * @param id удаляемой задачи
      */
     @Override
     public void remove(int id) {
@@ -123,5 +123,9 @@ public class InMemoryHistoryManager implements HistoryManager {
         } else {
             next.prev = prev;
         }
+
+        // Обнуляем ссылки у удалённого узла
+        node.prev = null;
+        node.next = null;
     }
 }
