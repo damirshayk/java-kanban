@@ -4,9 +4,12 @@ import com.yandex.app.model.*;
 import com.yandex.app.service.TaskManager;
 import com.yandex.app.service.Managers;
 
+import java.io.File;
+
 public class Main {
     public static void main(String[] args) {
-        TaskManager manager = Managers.getDefault();
+//        TaskManager manager = Managers.getDefault();
+        TaskManager manager = Managers.getFileBackedManager(new File("tasks.csv"));
 
         //Создайте две задачи, а также эпик с двумя подзадачами и эпик с одной подзадачей.
         Task task1 = new Task("Переезд", "Упаковать вещи и переехать", TaskStatus.NEW);

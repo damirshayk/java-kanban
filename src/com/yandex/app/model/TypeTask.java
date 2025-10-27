@@ -1,4 +1,7 @@
 package com.yandex.app.model;
 
-public class TypeTask {
+public enum TypeTask {
+    TASK,
+    EPIC,
+    SUBTASK
 }
