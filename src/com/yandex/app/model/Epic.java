@@ -10,10 +10,21 @@ import java.util.List;
 public class Epic extends Task {
     private List<Integer> subtaskIds = new ArrayList<>();
 
+    /**
+     * Конструктор для создания нового эпика.
+     *
+     * @param title       название эпика
+     * @param description описание эпика
+     */
     public Epic(String title, String description) {
         super(title, description, TaskStatus.NEW);
     }
 
+    /**
+     * Конструктор копирования для создания нового эпика на основе существующего.
+     *
+     * @param other существующий эпик для копирования
+     */
     public Epic(Epic other) {
         super(other.getTitle(), other.getDescription(), other.getStatus());
         this.setId(other.getId());
@@ -22,6 +33,8 @@ public class Epic extends Task {
 
     /**
      * Получает список всех подзадач (возвращает копию).
+     *
+     * @return список id подзадач эпика
      */
     public List<Integer> getSubtaskIds() {
         return new ArrayList<>(subtaskIds);
@@ -29,6 +42,7 @@ public class Epic extends Task {
 
     /**
      * Добавляет id в список подзадач эпика.
+     *
      * @throws IllegalArgumentException если переданный id совпадает с id самого эпика
      */
     public void addSubtaskId(int id) {
@@ -40,18 +54,26 @@ public class Epic extends Task {
 
     /**
      * Удаляет id из списка подзадач эпика.
+     *
+     * @param id id подзадачи для удаления
      */
     public void removeSubtaskId(int id) {
         subtaskIds.remove(Integer.valueOf(id));
     }
 
     /**
-     * Очищает список подзадач в эпике.
+     * Очищает список подзадач эпика.
+     * После вызова этого метода эпик не будет содержать никаких подзадач.
      */
     public void clearSubtasks() {
         subtaskIds.clear();
     }
 
+    /**
+     * Возвращает строковое представление эпика, включая его подзадачи.
+     *
+     * @return строковое представление эпика
+     */
     @Override
     public String toString() {
         return "Epic{" +
@@ -63,6 +85,11 @@ public class Epic extends Task {
                 '}';
     }
 
+    /**
+     * Создает и возвращает копию текущего объекта Epic.
+     *
+     * @return новая копия Epic
+     */
     @Override
     public Epic clone() {
         return new Epic(this);

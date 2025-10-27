@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class InMemoryTaskManagerTest {
 
-    private TaskManager    taskManager;
+    private TaskManager taskManager;
     private HistoryManager historyManager;
 
     @BeforeEach

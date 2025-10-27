@@ -8,6 +8,9 @@ public class Managers {
 
     /**
      * Возвращает реализацию TaskManager по умолчанию.
+     * В данном случае это InMemoryTaskManager.
+     *
+     * @return экземпляр TaskManager
      */
     public static TaskManager getDefault() {
         return new InMemoryTaskManager();
@@ -15,6 +18,9 @@ public class Managers {
 
     /**
      * Возвращает реализацию HistoryManager по умолчанию.
+     * В данном случае это InMemoryHistoryManager.
+     *
+     * @return экземпляр HistoryManager
      */
     public static HistoryManager getDefaultHistory() {
         return new InMemoryHistoryManager();
