@@ -10,12 +10,12 @@ public class Managers {
 
     /**
      * Возвращает реализацию TaskManager по умолчанию.
-     * В данном случае это InMemoryTaskManager.
+     * В данном случае это FileBackedTaskManager с файлом "tasks.csv".
      *
      * @return экземпляр TaskManager
      */
     public static TaskManager getDefault() {
-        return new InMemoryTaskManager();
+        return new FileBackedTaskManager(new File("tasks.csv"));
     }
 
     /**
@@ -26,15 +26,5 @@ public class Managers {
      */
     public static HistoryManager getDefaultHistory() {
         return new InMemoryHistoryManager();
-    }
-
-    /**
-     * Возвращает реализацию FileBackedTaskManager с указанным файлом для сохранения данных.
-     *
-     * @param file файл для сохранения данных
-     * @return экземпляр FileBackedTaskManager
-     */
-    public static FileBackedTaskManager getFileBackedManager(File file) {
-        return new FileBackedTaskManager(file);
     }
 }

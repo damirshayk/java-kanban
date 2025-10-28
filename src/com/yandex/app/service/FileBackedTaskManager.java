@@ -49,23 +49,14 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
      * Преобразует задачу в CSV-строку.
      */
     private String toString(Task task) {
-        String type;
-        if (task instanceof Epic) {
-            type = "EPIC";
-        } else if (task instanceof Subtask) {
-            type = "SUBTASK";
-        } else {
-            type = "TASK";
-        }
-
         String epicId = "";
-        if (task instanceof Subtask) {
+        if (task.getType() == TypeTask.SUBTASK) {
             epicId = String.valueOf(((Subtask) task).getEpicId());
         }
 
         return String.join(",",
                 String.valueOf(task.getId()),
-                type,
+                task.getType().name(),
                 clearStringForCSV(task.getTitle()),
                 task.getStatus().name(),
                 clearStringForCSV(task.getDescription()),
@@ -73,17 +64,33 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
     }
 
     /**
-     * Очищает строку от символов, мешающих формату CSV.
+     * Экранирует строку для корректного сохранения в CSV.
+     *
+     * @param value исходная строка.
      */
     private String clearStringForCSV(String value) {
-        if (value == null) return "";
-        return value
-                .replace(",", " ")
-                .replace("\n", " ")
-                .replace("\"", "")
-                .replace("'", "")
-                .replace(";", "")
+        if (value == null) return "\"\""; // пустое поле
+        String escaped = value
+                .replace("\"", "\"\"")   // удваиваем кавычки
+                .replace("\r", "")       // удаляем возвраты каретки
+                .replace("\n", "")       // удаляем переводы строк
+                .replace("\t", "")       // удаляем табуляции
                 .trim();
+        return "\"" + escaped + "\"";
+    }
+
+    /**
+     * Декодирует строку из CSV-формата.
+     *
+     * @param value строка в CSV-формате.
+     */
+    private static String unescapeCSV(String value) {
+        if (value == null || value.isEmpty()) return "";
+        value = value.trim();
+        if (value.startsWith("\"") && value.endsWith("\"") && value.length() >= 2) {
+            value = value.substring(1, value.length() - 1);
+        }
+        return value.replace("\"\"", "\"");
     }
 
     /**
@@ -92,31 +99,31 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
     private static Task fromString(String line) {
         String[] fields = line.split(",", -1);
         int id = Integer.parseInt(fields[0]);
-        String type = fields[1];
-        String name = fields[2];
+        TypeTask type = TypeTask.valueOf(fields[1]); // теперь используем ENUM
+        String name = unescapeCSV(fields[2]);
         TaskStatus status = TaskStatus.valueOf(fields[3]);
-        String description = fields[4];
+        String description = unescapeCSV(fields[4]);
 
-        return switch (type) {
-            case "TASK" -> {
+        switch (type) {
+            case TASK -> {
                 Task task = new Task(name, description, status);
                 task.setId(id);
-                yield task;
+                return task;
             }
-            case "EPIC" -> {
+            case EPIC -> {
                 Epic epic = new Epic(name, description);
                 epic.setId(id);
                 epic.setStatus(status);
-                yield epic;
+                return epic;
             }
-            case "SUBTASK" -> {
+            case SUBTASK -> {
                 int epicId = Integer.parseInt(fields[5]);
                 Subtask sub = new Subtask(name, description, status, epicId);
                 sub.setId(id);
-                yield sub;
+                return sub;
             }
             default -> throw new IllegalArgumentException("Неизвестный тип задачи: " + type);
-        };
+        }
     }
 
     /**

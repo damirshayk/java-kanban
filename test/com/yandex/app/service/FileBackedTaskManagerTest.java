@@ -106,4 +106,20 @@ class FileBackedTaskManagerTest {
         // Менеджер должен выбросить исключение при загрузке
         assertThrows(ManagerSaveException.class, () -> FileBackedTaskManager.loadFromFile(tempFile));
     }
+
+    /**
+     * Тест на обработку ошибки записи в файл
+     */
+    @Test
+    void shouldThrowManagerSaveExceptionWhenFileWriteFails() {
+        // Создаём заведомо ошибочный путь
+        File badFile = new File("/Exception/Exception.csv");
+        FileBackedTaskManager badManager = new FileBackedTaskManager(badFile);
+
+        Task task = new Task("Ошибка записи", "Тест IOException", TaskStatus.NEW);
+
+        // Проверяем, что при попытке записи выбрасывается наша ManagerSaveException
+        assertThrows(ManagerSaveException.class, () -> badManager.addTask(task),
+                "При ошибке записи должен выбрасываться ManagerSaveException");
+    }
 }
