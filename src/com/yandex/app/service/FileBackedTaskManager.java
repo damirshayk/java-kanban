@@ -94,15 +94,57 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
     }
 
     /**
+     * Безопасно парсит строку CSV с учётом кавычек и запятых.
+     */
+    private static List<String> parseCSVLine(String line) {
+        // Создаём список, куда будем добавлять найденные поля
+        List<String> result = new ArrayList<>();
+        // Если строка пустая, возвращаем пустой список
+        if (line == null || line.isEmpty()) return result;
+        // Буфер для текущего поля
+        StringBuilder current = new StringBuilder();
+        // Флаг, показывающий, находимся ли мы сейчас "внутри кавычек"
+        boolean inQuotes = false;
+        // Проходим по каждому символу строки
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i); // текущий символ
+            // Если встретили кавычку
+            if (c == '"') {
+                // Если уже находимся внутри кавычек, и следующая тоже кавычка — это экранированная кавычка ""
+                if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                    current.append('"'); // добавляем одну кавычку в значение поля
+                    i++;                 // пропускаем следующую кавычку
+                } else {
+                    // Меняем состояние — входим или выходим из кавычек
+                    inQuotes = !inQuotes;
+                }
+                // Если встретили запятую, и мы НЕ внутри кавычек
+            } else if (c == ',' && !inQuotes) {
+                // Завершаем текущее поле, добавляем его в список
+                result.add(current.toString());
+                // Очищаем буфер, чтобы начать собирать следующее поле
+                current.setLength(0);
+                // Любой другой символ добавляем в текущее поле
+            } else {
+                current.append(c);
+            }
+        }
+        // Добавляем последнее поле после выхода из цикла (после последней запятой)
+        result.add(current.toString());
+        // Возвращаем итоговый список полей
+        return result;
+    }
+
+    /**
      * Преобразует CSV-строку в задачу.
      */
     private static Task fromString(String line) {
-        String[] fields = line.split(",", -1);
-        int id = Integer.parseInt(fields[0]);
-        TypeTask type = TypeTask.valueOf(fields[1]); // теперь используем ENUM
-        String name = unescapeCSV(fields[2]);
-        TaskStatus status = TaskStatus.valueOf(fields[3]);
-        String description = unescapeCSV(fields[4]);
+        List<String> fields = parseCSVLine(line);
+        int id = Integer.parseInt(fields.get(0));
+        TypeTask type = TypeTask.valueOf(fields.get(1));
+        String name = unescapeCSV(fields.get(2));
+        TaskStatus status = TaskStatus.valueOf(fields.get(3));
+        String description = unescapeCSV(fields.get(4));
 
         switch (type) {
             case TASK -> {
@@ -117,7 +159,7 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
                 return epic;
             }
             case SUBTASK -> {
-                int epicId = Integer.parseInt(fields[5]);
+                int epicId = Integer.parseInt(fields.get(5));
                 Subtask sub = new Subtask(name, description, status, epicId);
                 sub.setId(id);
                 return sub;
@@ -267,13 +309,13 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         File file = new File("tasks.csv");
         FileBackedTaskManager manager = new FileBackedTaskManager(file);
 
-        Task t1 = new Task("Переезд", "Вещи", TaskStatus.NEW);
+        Task t1 = new Task("Проверка кавычек", "Кавычки \"внутри\" строки", TaskStatus.NEW);
         manager.addTask(t1);
 
-        Epic e1 = new Epic("Организация праздника", "День рождения мамы");
+        Epic e1 = new Epic("Проверка запятой", "Задача, с запятой  в описании");
         manager.addEpic(e1);
 
-        Subtask s1 = new Subtask("Купить еду", "Торт", TaskStatus.NEW, e1.getId());
+        Subtask s1 = new Subtask("\"Проверка\", с запятой после кавычки", "", TaskStatus.NEW, e1.getId());
         manager.addSubtask(s1);
 
         System.out.println("\nСохранено в файл. Перезапускаем менеджер...\n");
