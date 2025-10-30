@@ -4,9 +4,7 @@ package com.yandex.app.model;
  * Базовый класс Task. Представляет задачу с названием, описанием, статусом и id.
  */
 public class Task {
-    /**
-     * Ну да, private защищает поля отовсюду вне этого класса. Нужны гетеры/сеттеры
-     */
+
     private String title;
     private String description;
     private int id;
@@ -37,74 +35,39 @@ public class Task {
         this.setId(other.getId());
     }
 
-    /**
-     * Получает наименование
-     *
-     * @return наименование задачи
-     */
+    /** Возвращает тип задачи (для сериализации). */
+    public TypeTask getType() {
+        return TypeTask.TASK;
+    }
+
     public String getTitle() {
         return title;
     }
 
-    /**
-     * Получает описание
-     *
-     * @return описание задачи
-     */
     public String getDescription() {
         return description;
     }
 
-    /**
-     * Получает id
-     *
-     * @return id задачи
-     */
     public int getId() {
         return id;
     }
 
-    /**
-     * Получает статус
-     *
-     * @return статус задачи
-     */
     public TaskStatus getStatus() {
         return status;
     }
 
-    /**
-     * Меняет наименование
-     *
-     * @param title новое наименование задачи
-     */
     public void setTitle(String title) {
         this.title = title;
     }
 
-    /**
-     * Меняет описание
-     *
-     * @param description новое описание задачи
-     */
     public void setDescription(String description) {
         this.description = description;
     }
 
-    /**
-     * Меняет id
-     *
-     * @param id новый id задачи
-     */
     public void setId(int id) {  // Сеттер id (вызывается менеджером)
         this.id = id;
     }
 
-    /**
-     * Меняет статус
-     *
-     * @param status новый статус задачи
-     */
     public void setStatus(TaskStatus status) {
         this.status = status;
     }

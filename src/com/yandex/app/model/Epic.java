@@ -40,6 +40,11 @@ public class Epic extends Task {
         return new ArrayList<>(subtaskIds);
     }
 
+    @Override
+    public TypeTask getType() {
+        return TypeTask.EPIC;
+    }
+
     /**
      * Добавляет id в список подзадач эпика.
      *

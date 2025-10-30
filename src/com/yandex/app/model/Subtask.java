@@ -48,6 +48,11 @@ public class Subtask extends Task {
                 ", status=" + getStatus() + "}";
     }
 
+    @Override
+    public TypeTask getType() {
+        return TypeTask.SUBTASK;
+    }
+
     /**
      * Создает и возвращает копию текущего объекта Subtask.
      *
