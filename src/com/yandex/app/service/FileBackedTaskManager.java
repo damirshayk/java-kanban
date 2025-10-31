@@ -4,6 +4,8 @@ import com.yandex.app.model.*;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -12,7 +14,8 @@ import java.util.*;
 public class FileBackedTaskManager extends InMemoryTaskManager {
 
     private final File file; // Файл для сохранения данных
-    private static final String CSV_HEADER = "id,type,name,status,description,epic";
+    // Дополненный заголовок CSV для учёта времени и длительности
+    private static final String CSV_HEADER = "id,type,name,status,description,duration,startTime,epic";
 
     /**
      * Конструктор менеджера с указанием файла для сохранения.
@@ -54,12 +57,22 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
             epicId = String.valueOf(((Subtask) task).getEpicId());
         }
 
+        // Новые поля duration и startTime
+        String duration = task.getDuration()
+                .map(d -> String.valueOf(d.toMinutes()))
+                .orElse("");
+        String startTime = task.getStartTime()
+                .map(LocalDateTime::toString)
+                .orElse("");
+
         return String.join(",",
                 String.valueOf(task.getId()),
                 task.getType().name(),
                 clearStringForCSV(task.getTitle()),
                 task.getStatus().name(),
                 clearStringForCSV(task.getDescription()),
+                duration,
+                startTime,
                 epicId);
     }
 
@@ -139,33 +152,47 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
      * Преобразует CSV-строку в задачу.
      */
     private static Task fromString(String line) {
-        List<String> fields = parseCSVLine(line);
-        int id = Integer.parseInt(fields.get(0));
-        TypeTask type = TypeTask.valueOf(fields.get(1));
-        String name = unescapeCSV(fields.get(2));
-        TaskStatus status = TaskStatus.valueOf(fields.get(3));
-        String description = unescapeCSV(fields.get(4));
+        List<String> f = parseCSVLine(line);
+        if (f.size() < 6) {
+            throw new ManagerSaveException("Недостаточно полей в CSV-строке: " + line);
+        }
 
-        switch (type) {
-            case TASK -> {
-                Task task = new Task(name, description, status);
-                task.setId(id);
-                return task;
-            }
+        int id = Integer.parseInt(f.get(0));
+        TypeTask type = TypeTask.valueOf(f.get(1));
+        String name = unescapeCSV(f.get(2));
+        TaskStatus status = TaskStatus.valueOf(f.get(3));
+        String description = unescapeCSV(f.get(4));
+
+        // Новые поля duration и startTime
+        Duration duration = null;
+        if (!f.get(5).isBlank()) {
+            duration = Duration.ofMinutes(Long.parseLong(f.get(5)));
+        }
+
+        LocalDateTime startTime = null;
+        if (f.size() > 6 && !f.get(6).isBlank()) {
+            startTime = LocalDateTime.parse(f.get(6));
+        }
+
+        // Если в списке f есть элемент с индексом 7, присваиваем его значение переменной epicField.
+        // Иначе присваиваем пустую строку.
+        String epicField = f.size() > 7 ? f.get(7) : "";
+
+        return switch (type) {
+            case TASK -> new Task(id, name, description, status, duration, startTime);
             case EPIC -> {
-                Epic epic = new Epic(name, description);
-                epic.setId(id);
-                epic.setStatus(status);
-                return epic;
+                Epic e = new Epic(name, description);
+                e.setId(id);
+                e.setStatus(status);
+                e.setDuration(duration); // продолжительность и время могут пересчитаться при загрузке подзадач
+                e.setStartTime(startTime);
+                yield e;
             }
             case SUBTASK -> {
-                int epicId = Integer.parseInt(fields.get(5));
-                Subtask sub = new Subtask(name, description, status, epicId);
-                sub.setId(id);
-                return sub;
+                int epicId = epicField.isBlank() ? 0 : Integer.parseInt(epicField);
+                yield new Subtask(id, name, description, status, duration, startTime, epicId);
             }
-            default -> throw new IllegalArgumentException("Неизвестный тип задачи: " + type);
-        }
+        };
     }
 
     /**
@@ -227,8 +254,6 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
 
         return manager;
     }
-
-    // ==== Переопределяем методы + save() ====
 
     @Override
     public void addTask(Task task) {
@@ -309,21 +334,26 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         File file = new File("tasks.csv");
         FileBackedTaskManager manager = new FileBackedTaskManager(file);
 
+        LocalDateTime baseTime = LocalDateTime.now().plusMinutes(15)
+                .withSecond(0).withNano(0);
+
         Task t1 = new Task("Проверка кавычек", "Кавычки \"внутри\" строки", TaskStatus.NEW);
+        t1.setDuration(Duration.ofMinutes(90));
+        t1.setStartTime(baseTime);
         manager.addTask(t1);
 
         Epic e1 = new Epic("Проверка запятой", "Задача, с запятой  в описании");
         manager.addEpic(e1);
 
-        Subtask s1 = new Subtask("\"Проверка\", с запятой после кавычки", "", TaskStatus.NEW, e1.getId());
+        Subtask s1 = new Subtask(0, "\"Проверка\", с запятой после кавычки", "",
+                TaskStatus.NEW, Duration.ofMinutes(45),
+                baseTime.plusHours(2), e1.getId());
         manager.addSubtask(s1);
 
         System.out.println("\nСохранено в файл. Перезапускаем менеджер...\n");
-
         FileBackedTaskManager loaded = FileBackedTaskManager.loadFromFile(file);
 
         System.out.println("Загруженные задачи:");
-        //Про forEach только узнал из интернета, очень удобно!
         loaded.getAllTasks().forEach(System.out::println);
         loaded.getAllEpics().forEach(System.out::println);
         loaded.getAllSubtasks().forEach(System.out::println);

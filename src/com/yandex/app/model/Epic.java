@@ -1,7 +1,11 @@
 package com.yandex.app.model;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Класс Epic расширяет Task и хранит список id подзадач.
@@ -9,6 +13,8 @@ import java.util.List;
  */
 public class Epic extends Task {
     private List<Integer> subtaskIds = new ArrayList<>();
+
+    private LocalDateTime endTime; // время завершения эпика (самое позднее из подзадач)
 
     /**
      * Конструктор для создания нового эпика.
@@ -29,6 +35,9 @@ public class Epic extends Task {
         super(other.getTitle(), other.getDescription(), other.getStatus());
         this.setId(other.getId());
         this.subtaskIds = new ArrayList<>(other.getSubtaskIds());
+        this.duration = other.duration;
+        this.startTime = other.startTime;
+        this.endTime = other.endTime;
     }
 
     /**
@@ -72,6 +81,54 @@ public class Epic extends Task {
      */
     public void clearSubtasks() {
         subtaskIds.clear();
+    }
+
+    /**
+     * Обновляет вычисляемые поля (duration, startTime, endTime)
+     * на основе переданных подзадач.
+     *
+     * @param subtasks список всех подзадач эпика
+     */
+    public void updateEpicTime(List<Subtask> subtasks) {
+        if (subtasks == null || subtasks.isEmpty()) {
+            this.duration = Duration.ZERO;
+            this.startTime = null;
+            this.endTime = null;
+            return;
+        }
+
+        // Рассчитываем общую продолжительность
+        this.duration = subtasks.stream()
+                .map(Subtask::getDuration)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .reduce(Duration.ZERO, Duration::plus);
+
+        // Находим самое раннее время начала
+        this.startTime = subtasks.stream()
+                .map(Subtask::getStartTime)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .min(Comparator.naturalOrder())
+                .orElse(null);
+
+        // Находим самое позднее время окончания
+        this.endTime = subtasks.stream()
+                .map(Subtask::getEndTime)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .max(Comparator.naturalOrder())
+                .orElse(null);
+    }
+
+    /**
+     * Возвращает время окончания эпика.
+     *
+     * @return Optional<LocalDateTime> — конец последней подзадачи
+     */
+    @Override
+    public Optional<LocalDateTime> getEndTime() {
+        return Optional.ofNullable(endTime);
     }
 
     /**

@@ -1,5 +1,8 @@
 package com.yandex.app.model;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+
 /**
  * Класс Subtask расширяет Task и содержит id своего эпика.
  * Используется для создания подзадач, принадлежащих определённому эпику.
@@ -21,6 +24,28 @@ public class Subtask extends Task {
     }
 
     /**
+     * Конструктор для создания новой подзадачи с указанием эпика, времени и продолжительности.
+     *
+     * @param id          идентификатор подзадачи
+     * @param title       название подзадачи
+     * @param description описание подзадачи
+     * @param status      статус подзадачи
+     * @param duration    длительность задачи (в минутах)
+     * @param startTime   время начала задачи
+     * @param epicId      id эпика, к которому принадлежит эта подзадача
+     */
+    public Subtask(int id,
+                   String title,
+                   String description,
+                   TaskStatus status,
+                   Duration duration,
+                   LocalDateTime startTime,
+                   int epicId) {
+        super(id, title, description, status, duration, startTime);
+        this.epicId = epicId;
+    }
+
+    /**
      * Конструктор копирования для создания новой подзадачи на основе существующей.
      *
      * @param other существующая подзадача для копирования
@@ -28,6 +53,8 @@ public class Subtask extends Task {
     public Subtask(Subtask other) {
         super(other.getTitle(), other.getDescription(), other.getStatus());
         this.setId(other.getId());
+        this.setDuration(other.duration);
+        this.setStartTime(other.startTime);
         this.epicId = other.getEpicId();
     }
 
