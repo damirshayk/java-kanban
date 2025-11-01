@@ -26,6 +26,33 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         this.file = file;
     }
 
+
+    /**
+     * Преобразует историю просмотров в строку ID, разделённых запятыми.
+     */
+    private String historyToString() {
+        return getHistory().stream()
+                .map(task -> String.valueOf(task.getId()))
+                .reduce((a, b) -> a + "," + b)
+                .orElse("");
+    }
+
+    /**
+     * Восстанавливает историю просмотров из строки с ID.
+     */
+    private void loadHistory(String line) {
+        if (line == null || line.isBlank()) return;
+        String[] ids = line.split(",");
+        for (String idStr : ids) {
+            if (idStr.isBlank()) continue;
+            int id = Integer.parseInt(idStr.trim());
+            // добавляем в историю, если задача найдена
+            getTaskById(id)
+                    .or(() -> getEpicById(id))
+                    .or(() -> getSubtaskById(id));
+        }
+    }
+
     /**
      * Сохраняет все задачи в файл в формате CSV.
      */
@@ -42,6 +69,9 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
             for (Subtask subtask : getAllSubtasks()) {
                 writer.write(toString(subtask) + "\n");
             }
+
+            writer.write("\n"); // пустая строка перед историей
+            writer.write(historyToString());
 
         } catch (IOException e) {
             throw new ManagerSaveException("Ошибка при сохранении данных в файл: " + file.getName(), e);
@@ -152,31 +182,31 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
      * Преобразует CSV-строку в задачу.
      */
     private static Task fromString(String line) {
-        List<String> f = parseCSVLine(line);
-        if (f.size() < 6) {
+        List<String> fields = parseCSVLine(line);
+        if (fields.size() < 6) {
             throw new ManagerSaveException("Недостаточно полей в CSV-строке: " + line);
         }
 
-        int id = Integer.parseInt(f.get(0));
-        TypeTask type = TypeTask.valueOf(f.get(1));
-        String name = unescapeCSV(f.get(2));
-        TaskStatus status = TaskStatus.valueOf(f.get(3));
-        String description = unescapeCSV(f.get(4));
+        int id = Integer.parseInt(fields.get(0));
+        TypeTask type = TypeTask.valueOf(fields.get(1));
+        String name = unescapeCSV(fields.get(2));
+        TaskStatus status = TaskStatus.valueOf(fields.get(3));
+        String description = unescapeCSV(fields.get(4));
 
         // Новые поля duration и startTime
         Duration duration = null;
-        if (!f.get(5).isBlank()) {
-            duration = Duration.ofMinutes(Long.parseLong(f.get(5)));
+        if (!fields.get(5).isBlank()) {
+            duration = Duration.ofMinutes(Long.parseLong(fields.get(5)));
         }
 
         LocalDateTime startTime = null;
-        if (f.size() > 6 && !f.get(6).isBlank()) {
-            startTime = LocalDateTime.parse(f.get(6));
+        if (fields.size() > 6 && !fields.get(6).isBlank()) {
+            startTime = LocalDateTime.parse(fields.get(6));
         }
 
-        // Если в списке f есть элемент с индексом 7, присваиваем его значение переменной epicField.
+        // Если в списке fields есть элемент с индексом 7, присваиваем его значение переменной epicField.
         // Иначе присваиваем пустую строку.
-        String epicField = f.size() > 7 ? f.get(7) : "";
+        String epicField = fields.size() > 7 ? fields.get(7) : "";
 
         return switch (type) {
             case TASK -> new Task(id, name, description, status, duration, startTime);
@@ -184,8 +214,6 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
                 Epic e = new Epic(name, description);
                 e.setId(id);
                 e.setStatus(status);
-                e.setDuration(duration); // продолжительность и время могут пересчитаться при загрузке подзадач
-                e.setStartTime(startTime);
                 yield e;
             }
             case SUBTASK -> {
@@ -226,9 +254,13 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
             }
 
             // Пропускаем первую строку с заголовками
-            for (int i = 1; i < lines.size(); i++) {
+            int i = 1;
+            for (; i < lines.size(); i++) {
                 String line = lines.get(i).trim();
-                if (line.isEmpty()) continue;
+                if (line.isEmpty()) {
+                    // Пустая строка — разделитель между задачами и историей
+                    break;
+                }
 
                 try {
                     Task task = fromString(line);
@@ -242,8 +274,14 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
                     }
 
                 } catch (Exception parseError) {
-                    // Если строка повреждена — выбрасываем своё исключение, как ожидает тест
                     throw new ManagerSaveException("Ошибка парсинга CSV-строки: " + line, parseError);
+                }
+            }
+
+            if (i + 1 < lines.size()) { // если есть строки после разделителя
+                String historyLine = lines.get(i + 1).trim();
+                if (!historyLine.isEmpty()) {
+                    manager.loadHistory(historyLine);
                 }
             }
 
@@ -327,6 +365,30 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         save();
     }
 
+    // Получение задачи по ID с сохранением истории
+    @Override
+    public Optional<Task> getTaskById(int id) {
+        Optional<Task> task = super.getTaskById(id);
+        save();
+        return task;
+    }
+
+    // Получение эпика по ID с сохранением истории
+    @Override
+    public Optional<Epic> getEpicById(int id) {
+        Optional<Epic> epic = super.getEpicById(id);
+        save();
+        return epic;
+    }
+
+    // Получение подзадачи по ID с сохранением истории
+    @Override
+    public Optional<Subtask> getSubtaskById(int id) {
+        Optional<Subtask> subtask = super.getSubtaskById(id);
+        save();
+        return subtask;
+    }
+
     /**
      * Пример использования: создаёт менеджер, сохраняет и затем загружает данные.
      */
@@ -350,6 +412,11 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
                 baseTime.plusHours(2), e1.getId());
         manager.addSubtask(s1);
 
+        // Добавлены вызовы для записи истории
+        manager.getTaskById(t1.getId());
+        manager.getEpicById(e1.getId());
+        manager.getSubtaskById(s1.getId());
+
         System.out.println("\nСохранено в файл. Перезапускаем менеджер...\n");
         FileBackedTaskManager loaded = FileBackedTaskManager.loadFromFile(file);
 
@@ -357,5 +424,8 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         loaded.getAllTasks().forEach(System.out::println);
         loaded.getAllEpics().forEach(System.out::println);
         loaded.getAllSubtasks().forEach(System.out::println);
+
+        System.out.println("\nИстория после загрузки:");
+        loaded.getHistory().forEach(System.out::println);
     }
 }

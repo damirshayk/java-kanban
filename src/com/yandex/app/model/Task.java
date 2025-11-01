@@ -142,10 +142,8 @@ public class Task {
      * Если duration или startTime не заданы — возвращает пустой Optional.
      */
     public Optional<LocalDateTime> getEndTime() {
-        if (startTime == null || duration == null) {
-            return Optional.empty();
-        }
-        return Optional.of(startTime.plus(duration));
+        return getStartTime().flatMap(start ->
+                getDuration().map(start::plus));
     }
 
     /**
@@ -160,6 +158,8 @@ public class Task {
                 ", description='" + description + '\'' +
                 ", id=" + id +
                 ", status=" + status +
+                ", duration=" + duration +
+                ", startTime=" + startTime +
                 '}';
     }
 
