@@ -1,8 +1,11 @@
 package com.yandex.app;
 
 import com.yandex.app.model.*;
-import com.yandex.app.service.TaskManager;
 import com.yandex.app.service.Managers;
+import com.yandex.app.service.TaskManager;
+
+import java.time.Duration;
+import java.time.LocalDateTime;
 
 public class Main {
     public static void main(String[] args) {
@@ -10,9 +13,13 @@ public class Main {
 
         //Создайте две задачи, а также эпик с двумя подзадачами и эпик с одной подзадачей.
         Task task1 = new Task("Переезд", "Упаковать вещи и переехать", TaskStatus.NEW);
+        task1.setDuration(Duration.ofMinutes(180));
+        task1.setStartTime(LocalDateTime.of(2025, 10, 31, 9, 0));
         manager.addTask(task1);
 
         Task task2 = new Task("Позавтракать", "Приготовить луковый угар", TaskStatus.NEW); //Рецепт есть на ютубе
+        task2.setDuration(Duration.ofMinutes(30));
+        task2.setStartTime(LocalDateTime.of(2025, 10, 31, 12, 0));
         manager.addTask(task2);
 
         Epic epic1 = new Epic("Организовать праздник", "День рождения мамы");
@@ -23,14 +30,20 @@ public class Main {
 
         Subtask sub1 = new Subtask("Купить еду", "Купить продуктов",
                 TaskStatus.NEW, epic1.getId());
+        sub1.setDuration(Duration.ofMinutes(60));
+        sub1.setStartTime(LocalDateTime.of(2025, 11, 1, 10, 0));
         manager.addSubtask(sub1);
 
         Subtask sub2 = new Subtask("Купить фигурку Сайтамы", "Найти магазин аниме атрибутики",
                 TaskStatus.NEW, epic1.getId());
+        sub2.setDuration(Duration.ofMinutes(45));
+        sub2.setStartTime(LocalDateTime.of(2025, 11, 1, 12, 0));
         manager.addSubtask(sub2);
 
         Subtask sub3 = new Subtask("Справка", "Запросить справку на госуслугах",
                 TaskStatus.NEW, epic2.getId());
+        sub3.setDuration(Duration.ofMinutes(30));
+        sub3.setStartTime(LocalDateTime.of(2025, 11, 2, 9, 0));
         manager.addSubtask(sub3);
 
         // Вызовы методов получения задач, чтобы наполнить историю просмотров

@@ -4,6 +4,8 @@ import com.yandex.app.model.*;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -12,7 +14,8 @@ import java.util.*;
 public class FileBackedTaskManager extends InMemoryTaskManager {
 
     private final File file; // Файл для сохранения данных
-    private static final String CSV_HEADER = "id,type,name,status,description,epic";
+    // Дополненный заголовок CSV для учёта времени и длительности
+    private static final String CSV_HEADER = "id,type,name,status,description,duration,startTime,epic";
 
     /**
      * Конструктор менеджера с указанием файла для сохранения.
@@ -21,6 +24,33 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
      */
     public FileBackedTaskManager(File file) {
         this.file = file;
+    }
+
+
+    /**
+     * Преобразует историю просмотров в строку ID, разделённых запятыми.
+     */
+    private String historyToString() {
+        return getHistory().stream()
+                .map(task -> String.valueOf(task.getId()))
+                .reduce((a, b) -> a + "," + b)
+                .orElse("");
+    }
+
+    /**
+     * Восстанавливает историю просмотров из строки с ID.
+     */
+    private void loadHistory(String line) {
+        if (line == null || line.isBlank()) return;
+        String[] ids = line.split(",");
+        for (String idStr : ids) {
+            if (idStr.isBlank()) continue;
+            int id = Integer.parseInt(idStr.trim());
+            // добавляем в историю, если задача найдена
+            getTaskById(id)
+                    .or(() -> getEpicById(id))
+                    .or(() -> getSubtaskById(id));
+        }
     }
 
     /**
@@ -40,6 +70,9 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
                 writer.write(toString(subtask) + "\n");
             }
 
+            writer.write("\n"); // пустая строка перед историей
+            writer.write(historyToString());
+
         } catch (IOException e) {
             throw new ManagerSaveException("Ошибка при сохранении данных в файл: " + file.getName(), e);
         }
@@ -54,12 +87,22 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
             epicId = String.valueOf(((Subtask) task).getEpicId());
         }
 
+        // Новые поля duration и startTime
+        String duration = task.getDuration()
+                .map(d -> String.valueOf(d.toMinutes()))
+                .orElse("");
+        String startTime = task.getStartTime()
+                .map(LocalDateTime::toString)
+                .orElse("");
+
         return String.join(",",
                 String.valueOf(task.getId()),
                 task.getType().name(),
                 clearStringForCSV(task.getTitle()),
                 task.getStatus().name(),
                 clearStringForCSV(task.getDescription()),
+                duration,
+                startTime,
                 epicId);
     }
 
@@ -140,32 +183,44 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
      */
     private static Task fromString(String line) {
         List<String> fields = parseCSVLine(line);
+        if (fields.size() < 6) {
+            throw new ManagerSaveException("Недостаточно полей в CSV-строке: " + line);
+        }
+
         int id = Integer.parseInt(fields.get(0));
         TypeTask type = TypeTask.valueOf(fields.get(1));
         String name = unescapeCSV(fields.get(2));
         TaskStatus status = TaskStatus.valueOf(fields.get(3));
         String description = unescapeCSV(fields.get(4));
 
-        switch (type) {
-            case TASK -> {
-                Task task = new Task(name, description, status);
-                task.setId(id);
-                return task;
-            }
+        // Новые поля duration и startTime
+        Duration duration = null;
+        if (!fields.get(5).isBlank()) {
+            duration = Duration.ofMinutes(Long.parseLong(fields.get(5)));
+        }
+
+        LocalDateTime startTime = null;
+        if (fields.size() > 6 && !fields.get(6).isBlank()) {
+            startTime = LocalDateTime.parse(fields.get(6));
+        }
+
+        // Если в списке fields есть элемент с индексом 7, присваиваем его значение переменной epicField.
+        // Иначе присваиваем пустую строку.
+        String epicField = fields.size() > 7 ? fields.get(7) : "";
+
+        return switch (type) {
+            case TASK -> new Task(id, name, description, status, duration, startTime);
             case EPIC -> {
-                Epic epic = new Epic(name, description);
-                epic.setId(id);
-                epic.setStatus(status);
-                return epic;
+                Epic e = new Epic(name, description);
+                e.setId(id);
+                e.setStatus(status);
+                yield e;
             }
             case SUBTASK -> {
-                int epicId = Integer.parseInt(fields.get(5));
-                Subtask sub = new Subtask(name, description, status, epicId);
-                sub.setId(id);
-                return sub;
+                int epicId = epicField.isBlank() ? 0 : Integer.parseInt(epicField);
+                yield new Subtask(id, name, description, status, duration, startTime, epicId);
             }
-            default -> throw new IllegalArgumentException("Неизвестный тип задачи: " + type);
-        }
+        };
     }
 
     /**
@@ -199,9 +254,13 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
             }
 
             // Пропускаем первую строку с заголовками
-            for (int i = 1; i < lines.size(); i++) {
+            int i = 1;
+            for (; i < lines.size(); i++) {
                 String line = lines.get(i).trim();
-                if (line.isEmpty()) continue;
+                if (line.isEmpty()) {
+                    // Пустая строка — разделитель между задачами и историей
+                    break;
+                }
 
                 try {
                     Task task = fromString(line);
@@ -215,8 +274,14 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
                     }
 
                 } catch (Exception parseError) {
-                    // Если строка повреждена — выбрасываем своё исключение, как ожидает тест
                     throw new ManagerSaveException("Ошибка парсинга CSV-строки: " + line, parseError);
+                }
+            }
+
+            if (i + 1 < lines.size()) { // если есть строки после разделителя
+                String historyLine = lines.get(i + 1).trim();
+                if (!historyLine.isEmpty()) {
+                    manager.loadHistory(historyLine);
                 }
             }
 
@@ -227,8 +292,6 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
 
         return manager;
     }
-
-    // ==== Переопределяем методы + save() ====
 
     @Override
     public void addTask(Task task) {
@@ -302,6 +365,30 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         save();
     }
 
+    // Получение задачи по ID с сохранением истории
+    @Override
+    public Optional<Task> getTaskById(int id) {
+        Optional<Task> task = super.getTaskById(id);
+        save();
+        return task;
+    }
+
+    // Получение эпика по ID с сохранением истории
+    @Override
+    public Optional<Epic> getEpicById(int id) {
+        Optional<Epic> epic = super.getEpicById(id);
+        save();
+        return epic;
+    }
+
+    // Получение подзадачи по ID с сохранением истории
+    @Override
+    public Optional<Subtask> getSubtaskById(int id) {
+        Optional<Subtask> subtask = super.getSubtaskById(id);
+        save();
+        return subtask;
+    }
+
     /**
      * Пример использования: создаёт менеджер, сохраняет и затем загружает данные.
      */
@@ -309,23 +396,36 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         File file = new File("tasks.csv");
         FileBackedTaskManager manager = new FileBackedTaskManager(file);
 
+        LocalDateTime baseTime = LocalDateTime.now().plusMinutes(15)
+                .withSecond(0).withNano(0);
+
         Task t1 = new Task("Проверка кавычек", "Кавычки \"внутри\" строки", TaskStatus.NEW);
+        t1.setDuration(Duration.ofMinutes(90));
+        t1.setStartTime(baseTime);
         manager.addTask(t1);
 
         Epic e1 = new Epic("Проверка запятой", "Задача, с запятой  в описании");
         manager.addEpic(e1);
 
-        Subtask s1 = new Subtask("\"Проверка\", с запятой после кавычки", "", TaskStatus.NEW, e1.getId());
+        Subtask s1 = new Subtask(0, "\"Проверка\", с запятой после кавычки", "",
+                TaskStatus.NEW, Duration.ofMinutes(45),
+                baseTime.plusHours(2), e1.getId());
         manager.addSubtask(s1);
 
-        System.out.println("\nСохранено в файл. Перезапускаем менеджер...\n");
+        // Добавлены вызовы для записи истории
+        manager.getTaskById(t1.getId());
+        manager.getEpicById(e1.getId());
+        manager.getSubtaskById(s1.getId());
 
+        System.out.println("\nСохранено в файл. Перезапускаем менеджер...\n");
         FileBackedTaskManager loaded = FileBackedTaskManager.loadFromFile(file);
 
         System.out.println("Загруженные задачи:");
-        //Про forEach только узнал из интернета, очень удобно!
         loaded.getAllTasks().forEach(System.out::println);
         loaded.getAllEpics().forEach(System.out::println);
         loaded.getAllSubtasks().forEach(System.out::println);
+
+        System.out.println("\nИстория после загрузки:");
+        loaded.getHistory().forEach(System.out::println);
     }
 }

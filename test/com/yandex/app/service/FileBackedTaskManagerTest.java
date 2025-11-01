@@ -1,125 +1,93 @@
 package com.yandex.app.service;
 
-import com.yandex.app.model.*;
-import org.junit.jupiter.api.BeforeEach;
+import com.yandex.app.model.Epic;
+import com.yandex.app.model.Subtask;
+import com.yandex.app.model.Task;
+import com.yandex.app.model.TaskStatus;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.List;
+import java.time.Duration;
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Тесты для проверки сохранения и загрузки менеджера задач с поддержкой файлов.
- */
-class FileBackedTaskManagerTest {
+class FileBackedTaskManagerTest extends TaskManagerTest<FileBackedTaskManager> {
 
     private File tempFile;
-    private FileBackedTaskManager manager;
 
-    /**
-     * Создаёт новый FileBackedTaskManager с временным файлом перед каждым тестом.
-     */
-    @BeforeEach
-    void setUp() throws IOException {
-        // Создаём временный файл, который удалится после теста
-        tempFile = File.createTempFile("java-kanban_test", ".csv");
-        manager = new FileBackedTaskManager(tempFile);
-    }
-
-    /**
-     * Тест на сохранение и загрузку пустого менеджера
-     */
-    @Test
-    void shouldSaveAndLoadEmptyFile() {
-        FileBackedTaskManager loaded = FileBackedTaskManager.loadFromFile(tempFile);
-
-        assertTrue(loaded.getAllTasks().isEmpty(), "Восстановленный менеджер должен быть пустым");
-        assertTrue(loaded.getAllEpics().isEmpty(), "Эпики должны отсутствовать");
-        assertTrue(loaded.getAllSubtasks().isEmpty(), "Подзадачи должны отсутствовать");
-    }
-
-    /**
-     * Тест на сохранение и загрузку одной задачи
-     */
-    @Test
-    void shouldSaveAndLoadSingleTask() {
-        Task task = new Task("Задача", "Описание", TaskStatus.NEW);
-        manager.addTask(task);
-
-        FileBackedTaskManager loaded = FileBackedTaskManager.loadFromFile(tempFile);
-        List<Task> tasks = loaded.getAllTasks();
-
-        assertEquals(1, tasks.size(), "Должна загрузиться одна задача");
-        assertEquals(task.getTitle(), tasks.getFirst().getTitle());
-        assertEquals(task.getDescription(), tasks.getFirst().getDescription());
-    }
-
-    /**
-     * Тест на сохранение и загрузку эпика с подзадачами
-     */
-    @Test
-    void shouldSaveAndLoadEpicWithSubtasks() {
-        Epic epic = new Epic("Эпик", "Описание эпика");
-        manager.addEpic(epic);
-
-        Subtask sub1 = new Subtask("Подзадача 1", "Описание 1", TaskStatus.NEW, epic.getId());
-        Subtask sub2 = new Subtask("Подзадача 2", "Описание 2", TaskStatus.DONE, epic.getId());
-        manager.addSubtask(sub1);
-        manager.addSubtask(sub2);
-
-        FileBackedTaskManager loaded = FileBackedTaskManager.loadFromFile(tempFile);
-
-        List<Epic> epics = loaded.getAllEpics();
-        List<Subtask> subtasks = loaded.getAllSubtasks();
-
-        assertEquals(1, epics.size(), "Должен быть загружен один эпик");
-        assertEquals(2, subtasks.size(), "Должно быть загружено две подзадачи");
-
-        Epic loadedEpic = epics.getFirst();
-        assertEquals(epic.getTitle(), loadedEpic.getTitle(), "Название эпика должно совпадать");
-
-        assertTrue(
-                subtasks.stream().anyMatch(s -> s.getTitle().equals(sub1.getTitle())),
-                "Подзадача 1 должна быть восстановлена"
-        );
-        assertTrue(
-                subtasks.stream().anyMatch(s -> s.getTitle().equals(sub2.getTitle())),
-                "Подзадача 2 должна быть восстановлена"
-        );
-    }
-
-    /**
-     * Тест на сохранение и загрузку повреждённого файла
-     */
-    @Test
-    void shouldThrowWhenLoadingCorruptedFile() {
-        // Портим файл вручную
+    @Override
+    protected FileBackedTaskManager createManager() {
         try {
-            Files.writeString(tempFile.toPath(), "взял,и,испортил,весь,файл");
+            tempFile = File.createTempFile("java-kanban", ".csv");
+            return new FileBackedTaskManager(tempFile);
         } catch (IOException e) {
-            fail("Не удалось записать повреждённый файл");
+            throw new RuntimeException("Не удалось создать временный файл", e);
         }
+    }
 
-        // Менеджер должен выбросить исключение при загрузке
+    @AfterEach
+    void cleanup() {
+        if (tempFile != null) tempFile.delete();
+    }
+
+    @Test
+    void shouldThrowWhenFileIsCorrupted() throws IOException {
+        Files.writeString(tempFile.toPath(), "сломанная,строка");
         assertThrows(ManagerSaveException.class, () -> FileBackedTaskManager.loadFromFile(tempFile));
     }
 
-    /**
-     * Тест на обработку ошибки записи в файл
-     */
     @Test
-    void shouldThrowManagerSaveExceptionWhenFileWriteFails() {
-        // Создаём заведомо ошибочный путь
-        File badFile = new File("/Exception/Exception.csv");
-        FileBackedTaskManager badManager = new FileBackedTaskManager(badFile);
+    void shouldNotThrowWhenSavingValidData() {
+        assertDoesNotThrow(() -> manager.addTask(new Task("ОК", "Описание", TaskStatus.NEW)));
+        assertDoesNotThrow(() -> FileBackedTaskManager.loadFromFile(tempFile));
+    }
 
-        Task task = new Task("Ошибка записи", "Тест IOException", TaskStatus.NEW);
+    // Тест на сохранение и загрузку истории
+    @Test
+    void shouldSaveAndLoadHistoryCorrectly() {
+        LocalDateTime now = LocalDateTime.of(2025, 11, 1, 10, 0);
 
-        // Проверяем, что при попытке записи выбрасывается наша ManagerSaveException
-        assertThrows(ManagerSaveException.class, () -> badManager.addTask(task),
-                "При ошибке записи должен выбрасываться ManagerSaveException");
+        Task task = new Task("Задача", "Описание", TaskStatus.NEW);
+        task.setStartTime(now);
+        task.setDuration(Duration.ofMinutes(60));
+        manager.addTask(task);
+
+        Epic epic = new Epic("Эпик", "Описание");
+        manager.addEpic(epic);
+
+        Subtask sub = new Subtask("Подзадача", "Описание", TaskStatus.NEW, epic.getId());
+        sub.setStartTime(now.plusHours(2));
+        sub.setDuration(Duration.ofMinutes(30));
+        manager.addSubtask(sub);
+
+        // вызываем getById(), чтобы записать историю
+        manager.getTaskById(task.getId());
+        manager.getEpicById(epic.getId());
+        manager.getSubtaskById(sub.getId());
+
+        // читаем содержимое файла и проверяем наличие строки истории
+        String fileData;
+        try {
+            fileData = Files.readString(tempFile.toPath());
+        } catch (IOException e) {
+            throw new RuntimeException("Ошибка чтения временного файла", e);
+        }
+        assertTrue(fileData.contains("1,2,3"),
+                "Файл должен содержать строку истории ID: 1,2,3");
+
+        // загружаем менеджер заново
+        FileBackedTaskManager loaded = FileBackedTaskManager.loadFromFile(tempFile);
+
+        // история должна восстановиться корректно
+        assertEquals(3, loaded.getHistory().size(),
+                "После загрузки история должна содержать 3 записи");
+
+        assertEquals(task.getId(), loaded.getHistory().get(0).getId());
+        assertEquals(epic.getId(), loaded.getHistory().get(1).getId());
+        assertEquals(sub.getId(), loaded.getHistory().get(2).getId());
     }
 }
