@@ -1,16 +1,7 @@
-# Compiled class file
+# ------------------------
+# === Java build artifacts ===
+# ------------------------
 *.class
-
-# Log file
-*.log
-
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
 *.jar
 *.war
 *.nar
@@ -19,9 +10,70 @@
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# JVM crash logs
 hs_err_pid*
+replay_pid*
 
-# Ignore IDE specific files
+# ------------------------
+# === Logs and temp files ===
+# ------------------------
+*.log
+*.out
+*.tmp
+*.bak
+*.swp
+
+# ------------------------
+# === BlueJ / J2ME legacy ===
+# ------------------------
+*.ctxt
+.mtj.tmp/
+
+# ------------------------
+# === Maven / Gradle cache ===
+# ------------------------
+target/
+build/
+out/
+.gradle/
+.mvn/
+dependency-reduced-pom.xml
+
+# ------------------------
+# === IntelliJ IDEA / JetBrains ===
+# ------------------------
+.idea/
+*.iml
+*.iws
+*.ipr
+# JetBrains system folders
+.idea_modules/
+.idea_shelf/
+.idea_httpRequests/
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries/
+.idea/libraries/
+
+# ------------------------
+# === OS-generated files ===
+# ------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ------------------------
+# === AI assistants & plugins ===
+# ------------------------
 copilot.data.migration.*.xml
+
+# ------------------------
+# === Project-specific files ===
+# ------------------------
+# CSV test data or exports
 *.csv
+
+# Ignore local settings / configs
+*.local.properties
+*.env
+.env.*
