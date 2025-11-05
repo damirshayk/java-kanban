@@ -59,7 +59,8 @@ public class TasksHandler extends BaseHttpHandler implements HttpHandler {
                     String json = gson.toJson(optTask.get());
                     sendResponse(exchange, json, 200);
                 } else {
-                    sendNotFound(exchange, "Task с id " + id + " не найден");                }
+                    sendNotFound(exchange, "Task с id " + id + " не найден");
+                }
             } catch (NumberFormatException e) {
                 sendNotFound(exchange, "Неверный task id");
             }
