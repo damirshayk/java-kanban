@@ -1,11 +1,8 @@
 package com.yandex.app.http.handler;
 
-import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
 import com.yandex.app.model.Subtask;
 import com.yandex.app.service.TaskManager;
-import com.yandex.app.http.HttpTaskServer;
 
 import java.io.IOException;
 import java.io.InputStream;
