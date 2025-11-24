@@ -1,17 +1,35 @@
 package com.yandex.app.http.handler;
 
+
+import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.yandex.app.http.HttpTaskServer;
+import com.yandex.app.service.TaskManager;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 /**
  * Базовый HTTP‑обработчик. Содержит методы для отправки ответов с нужным статусом и
  * минимизирует дублирование кода между конкретными обработчиками. Все ответы
  * кодируются в UTF‑8 и имеют тип «application/json».
  */
-public class BaseHttpHandler {
+public abstract class BaseHttpHandler implements HttpHandler {
+
+    protected final TaskManager manager;
+    protected final Gson gson;
+
+    protected BaseHttpHandler(TaskManager manager) {
+        this.manager = Objects.requireNonNull(manager, "manager must not be null");
+        this.gson = Objects.requireNonNull(HttpTaskServer.getGson(), "gson must not be null");
+    }
+
+    @Override
+    public abstract void handle(HttpExchange exchange) throws IOException;
+
     /**
      * Отправляет строковый ответ клиенту. В методе устанавливаются заголовок Content‑Type и статус ответа.
      * Если тело пустое, всё равно отправляется пустая строка, чтобы корректно закрыть поток.

@@ -1,9 +1,6 @@
 package com.yandex.app.http.handler;
 
-import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.yandex.app.http.HttpTaskServer;
 import com.yandex.app.service.TaskManager;
 
 import java.io.IOException;
@@ -15,13 +12,10 @@ import java.net.URI;
  * Если запрос выполнен успешно, возвращается статус 200 и JSON‑массив задач.
  * Если метод не поддерживается, возвращается 405.
  */
-public class PrioritizedHandler extends BaseHttpHandler implements HttpHandler {
-    private final TaskManager manager;
-    private final Gson gson;
+public class PrioritizedHandler extends BaseHttpHandler {
 
     public PrioritizedHandler(TaskManager manager) {
-        this.manager = manager;
-        this.gson = HttpTaskServer.getGson();
+        super(manager);
     }
 
     @Override

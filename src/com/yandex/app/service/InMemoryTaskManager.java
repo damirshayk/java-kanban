@@ -190,6 +190,7 @@ public class InMemoryTaskManager implements TaskManager {
 
     /**
      * Возвращает задачу по id. Добавляет её в историю просмотров.
+     *
      * @return Optional<Task> вместо null
      */
     @Override
@@ -204,6 +205,7 @@ public class InMemoryTaskManager implements TaskManager {
 
     /**
      * Возвращает эпик по id. Добавляет его в историю просмотров.
+     *
      * @return Optional<Epic> вместо null
      */
     @Override
@@ -218,6 +220,7 @@ public class InMemoryTaskManager implements TaskManager {
 
     /**
      * Возвращает подзадачу по id. Добавляет её в историю просмотров.
+     *
      * @return Optional<Subtask> вместо null
      */
     @Override
@@ -422,20 +425,25 @@ public class InMemoryTaskManager implements TaskManager {
     }
 
     /**
-     * Возвращает список подзадач, принадлежащих конкретному эпику.
+     * Возвращает список подзадач, принадлежащих указанному эпику.
      *
      * @param epicId идентификатор эпика
      * @return список подзадач
+     * @throws IllegalArgumentException если эпик с указанным id не найден
      */
     @Override
     public List<Subtask> getSubtasksOfEpic(int epicId) {
-        // Заменил на Stream API
-        return epics.containsKey(epicId)
-                ? epics.get(epicId).getSubtaskIds().stream()
+        // Проверка существования эпика
+        if (!epics.containsKey(epicId)) {
+            throw new IllegalArgumentException("Эпик с id " + epicId + " не найден.");
+        }
+        // Получение списка подзадач
+        return epics.get(epicId)
+                .getSubtaskIds()
+                .stream()
                 .map(subtasks::get)
                 .filter(Objects::nonNull)
-                .toList()
-                : List.of();
+                .toList();
     }
 
     /**
@@ -448,7 +456,8 @@ public class InMemoryTaskManager implements TaskManager {
         return historyManager.getHistory();
     }
 
-    /** Возвращает список задач в порядке приоритета (по времени начала).
+    /**
+     * Возвращает список задач в порядке приоритета (по времени начала).
      * Задачи без startTime не включаются в этот список.
      */
     @Override

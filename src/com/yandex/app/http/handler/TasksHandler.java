@@ -1,11 +1,8 @@
 package com.yandex.app.http.handler;
 
-import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
 import com.yandex.app.model.Task;
 import com.yandex.app.service.TaskManager;
-import com.yandex.app.http.HttpTaskServer;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,13 +13,10 @@ import java.nio.charset.StandardCharsets;
  * Обработчик HTTP-запросов для пути /tasks.
  * Поддерживает методы GET, POST и DELETE для работы с задачами.
  */
-public class TasksHandler extends BaseHttpHandler implements HttpHandler {
-    private final TaskManager manager;
-    private final Gson gson;
+public class TasksHandler extends BaseHttpHandler {
 
     public TasksHandler(TaskManager manager) {
-        this.manager = manager;
-        this.gson = HttpTaskServer.getGson();
+        super(manager);
     }
 
     @Override
@@ -38,8 +32,7 @@ public class TasksHandler extends BaseHttpHandler implements HttpHandler {
                 default -> sendResponse(exchange, "", 405);
             }
         } catch (Exception e) {
-            // Любая неожиданная ошибка
-            sendServerError(exchange, e.getMessage());
+            sendServerError(exchange, "Внутренняя ошибка сервера: " + e.getMessage());
         }
     }
 

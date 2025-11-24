@@ -16,13 +16,10 @@ import java.nio.charset.StandardCharsets;
  * Обработчик HTTP-запросов для подзадач (subtasks).
  * Поддерживает методы GET, POST и DELETE для работы с подзадачами.
  */
-public class SubtasksHandler extends BaseHttpHandler implements HttpHandler {
-    private final TaskManager manager;
-    private final Gson gson;
+public class SubtasksHandler extends BaseHttpHandler {
 
     public SubtasksHandler(TaskManager manager) {
-        this.manager = manager;
-        this.gson = HttpTaskServer.getGson();
+        super(manager);
     }
 
     @Override

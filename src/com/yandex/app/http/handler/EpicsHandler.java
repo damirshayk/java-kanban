@@ -1,11 +1,8 @@
 package com.yandex.app.http.handler;
 
-import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
 import com.yandex.app.model.Epic;
 import com.yandex.app.service.TaskManager;
-import com.yandex.app.http.HttpTaskServer;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,13 +13,10 @@ import java.nio.charset.StandardCharsets;
  * Обработчик HTTP-запросов для эпиков.
  * Поддерживает методы GET, POST и DELETE.
  */
-public class EpicsHandler extends BaseHttpHandler implements HttpHandler {
-    private final TaskManager manager;
-    private final Gson gson;
+public class EpicsHandler extends BaseHttpHandler {
 
     public EpicsHandler(TaskManager manager) {
-        this.manager = manager;
-        this.gson = HttpTaskServer.getGson();
+        super(manager);
     }
 
     @Override
@@ -38,10 +32,21 @@ public class EpicsHandler extends BaseHttpHandler implements HttpHandler {
                 default -> sendResponse(exchange, "", 405);
             }
         } catch (Exception e) {
-            sendServerError(exchange, e.getMessage());
+            sendServerError(exchange, "Внутренняя ошибка сервера: " + e.getMessage());
         }
     }
 
+    /**
+     * Обрабатывает GET-запросы.
+     * Поддерживаются следующие пути:
+     * - /epics — получить все эпики
+     * - /epics/{id} — получить эпик по ID
+     * - /epics/{id}/subtasks — получить все подзадачи эпика по ID
+     *
+     * @param exchange объект обмена HTTP
+     * @param path     путь запроса
+     * @throws IOException при ошибке записи ответа
+     */
     private void handleGet(HttpExchange exchange, String path) throws IOException {
         String[] parts = path.split("/");
         // /epics, /epics/{id}, /epics/{id}/subtasks
@@ -68,42 +73,59 @@ public class EpicsHandler extends BaseHttpHandler implements HttpHandler {
         if (parts.length == 4 && "subtasks".equals(parts[3])) {
             try {
                 int id = Integer.parseInt(parts[2]);
-                var subs = manager.getSubtasksOfEpic(id);
-                // Если эпик не найден, getSubtasksOfEpic вернёт пустой список. Однако согласно
-                // спецификации следует возвращать 404, если эпика нет.
-                if (manager.getEpicById(id).isEmpty()) {
-                    sendNotFound(exchange, "Эпик с id " + id + " не найден");
-                    return;
-                }
+                var subs = manager.getSubtasksOfEpic(id); // здесь уже бросится исключение, если эпика нет
                 String json = gson.toJson(subs);
                 sendResponse(exchange, json, 200);
             } catch (NumberFormatException e) {
                 sendNotFound(exchange, "Неверный epic id");
+            } catch (IllegalArgumentException e) {
+                // Эпик не найден → 404
+                sendNotFound(exchange, e.getMessage());
             }
             return;
         }
         sendNotFound(exchange, "Не найден");
     }
 
+    /**
+     * Обрабатывает POST-запросы для создания нового эпика.
+     * Обновление эпика через POST не поддерживается.
+     *
+     * @param exchange объект обмена HTTP
+     * @throws IOException при ошибке чтения тела запроса или записи ответа
+     */
     private void handlePost(HttpExchange exchange) throws IOException {
         // Создаёт новый эпик. Обновление эпика через POST не поддерживается.
         byte[] bytes;
         try (InputStream is = exchange.getRequestBody()) {
             bytes = is.readAllBytes();
         }
+
         String body = new String(bytes, StandardCharsets.UTF_8);
+
+        if (body.isBlank()) {
+            sendServerError(exchange, "Пустое тело запроса для epic");
+            return;
+        }
+
         Epic epic = gson.fromJson(body, Epic.class);
         if (epic == null) {
             sendServerError(exchange, "Неверный epic body");
             return;
         }
+
         try {
-            // Всегда создаём новую сущность. Id из клиента игнорируется.
-            epic.setId(0);
-            manager.addEpic(epic);
+            // Если id <= 0 или не указан — создаём новый эпик
+            if (epic.getId() <= 0) {
+                manager.addEpic(epic);
+            } else {
+                // Если id передан — обновляем существующий эпик
+                manager.updateEpic(epic);
+            }
             sendEmpty(exchange, 201);
         } catch (IllegalArgumentException e) {
-            sendNotFound(exchange, e.getMessage());
+            String message = e.getMessage() != null ? e.getMessage() : ""; // защита от NPE
+            sendNotFound(exchange, message);
         }
     }
 

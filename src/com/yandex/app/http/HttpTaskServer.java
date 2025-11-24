@@ -4,27 +4,31 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.yandex.app.http.adapter.DurationAdapter;
 import com.yandex.app.http.adapter.LocalDateTimeAdapter;
-import com.sun.net.httpserver.HttpServer;
-import com.yandex.app.service.Managers;
-import com.yandex.app.service.TaskManager;
 import com.yandex.app.http.handler.EpicsHandler;
 import com.yandex.app.http.handler.HistoryHandler;
 import com.yandex.app.http.handler.PrioritizedHandler;
 import com.yandex.app.http.handler.SubtasksHandler;
 import com.yandex.app.http.handler.TasksHandler;
+import com.yandex.app.service.Managers;
+import com.yandex.app.service.TaskManager;
+import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Objects;
 
 /**
- * HTTP‑сервер для трекера задач. Принимает запросы на порт 8080 и
+ * HTTP-сервер для трекера задач. Принимает запросы на порт 8080 и
  * делегирует их соответствующим обработчикам. Каждый путь соответствует
  * группе методов TaskManager.
  */
 public class HttpTaskServer {
+
     private static final int PORT = 8080;
+
     private final HttpServer server;
-    private static final Gson gson = new GsonBuilder()
+
+    private static final Gson GSON = new GsonBuilder()
             // Регистрируем адаптеры для Duration и LocalDateTime, чтобы корректно сериализовать
             // и десериализовать эти типы (в JSON Duration представляется количеством минут,
             // а LocalDateTime — в формате ISO_LOCAL_DATE_TIME).
@@ -33,7 +37,7 @@ public class HttpTaskServer {
             .create();
 
     /**
-     * Создаёт HTTP‑сервер. Для корректной работы необходимо передать
+     * Создаёт HTTP-сервер. Для корректной работы необходимо передать
      * существующий менеджер задач. Тесты могут использовать InMemoryTaskManager,
      * а основной метод main — FileBackedTaskManager через Managers.getDefault().
      *
@@ -41,26 +45,26 @@ public class HttpTaskServer {
      * @throws IOException если не удаётся открыть порт
      */
     public HttpTaskServer(TaskManager manager) throws IOException {
+        TaskManager safeManager = Objects.requireNonNull(manager, "manager must not be null");
         this.server = HttpServer.create(new InetSocketAddress(PORT), 0);
         // привязываем обработчики к путям
-        server.createContext("/tasks", new TasksHandler(manager));
-        server.createContext("/subtasks", new SubtasksHandler(manager));
-        server.createContext("/epics", new EpicsHandler(manager));
-        server.createContext("/history", new HistoryHandler(manager));
-        server.createContext("/prioritized", new PrioritizedHandler(manager));
+        server.createContext("/tasks", new TasksHandler(safeManager));
+        server.createContext("/subtasks", new SubtasksHandler(safeManager));
+        server.createContext("/epics", new EpicsHandler(safeManager));
+        server.createContext("/history", new HistoryHandler(safeManager));
+        server.createContext("/prioritized", new PrioritizedHandler(safeManager));
     }
 
     /**
      * Возвращает экземпляр Gson, используемый сервером для
-     * сериализации/десериализации. Нужен в тестах для преобразования
-     * объектов в JSON.
+     * сериализации/десериализации. Нужен в тестах и базовом HTTP-обработчике.
      */
     public static Gson getGson() {
-        return gson;
+        return GSON;
     }
 
     /**
-     * Запускает HTTP‑сервер. После вызова метода сервер начинает
+     * Запускает HTTP-сервер. После вызова метода сервер начинает
      * обрабатывать входящие запросы.
      */
     public void start() {
@@ -68,7 +72,7 @@ public class HttpTaskServer {
     }
 
     /**
-     * Останавливает HTTP‑сервер. После вызова метода сервер перестаёт
+     * Останавливает HTTP-сервер. После вызова метода сервер перестаёт
      * принимать запросы. Параметр 0 означает немедленное завершение.
      */
     public void stop() {

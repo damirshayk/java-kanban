@@ -35,6 +35,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
         assertEquals(task.getDescription(), found.getDescription());
     }
 
+    //
     @Test
     void shouldAddEpicAndSubtasks() {
         Epic epic = new Epic("Эпик", "Описание");
@@ -60,6 +61,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
         assertEquals(TaskStatus.DONE, updated.getStatus());
     }
 
+    //
     @Test
     void shouldDeleteTaskById() {
         Task task = new Task("Удалить", "Описание", TaskStatus.NEW);

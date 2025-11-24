@@ -14,13 +14,10 @@ import java.net.URI;
  * Поддерживает только метод GET, возвращающий историю просмотров задач.
  * Любые другие методы возвращают статус 405 (Метод не поддерживается).
  */
-public class HistoryHandler extends BaseHttpHandler implements HttpHandler {
-    private final TaskManager manager;
-    private final Gson gson;
+public class HistoryHandler extends BaseHttpHandler {
 
     public HistoryHandler(TaskManager manager) {
-        this.manager = manager;
-        this.gson = HttpTaskServer.getGson();
+        super(manager);
     }
 
     @Override
@@ -33,10 +30,11 @@ public class HistoryHandler extends BaseHttpHandler implements HttpHandler {
             return;
         }
         if ("GET".equals(method)) {
-            // Получаем историю и сериализуем её в JSON
+            // Возвращаем историю просмотров задач
             String json = gson.toJson(manager.getHistory());
             sendResponse(exchange, json, 200);
         } else {
+            // Метод не поддерживается
             sendResponse(exchange, "Метод не поддерживается", 405);
         }
     }
