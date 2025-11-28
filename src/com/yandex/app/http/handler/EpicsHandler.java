@@ -2,6 +2,7 @@ package com.yandex.app.http.handler;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.yandex.app.model.Epic;
+import com.yandex.app.service.EpicNotFoundException;
 import com.yandex.app.service.TaskManager;
 
 import java.io.IOException;
@@ -78,7 +79,7 @@ public class EpicsHandler extends BaseHttpHandler {
                 sendResponse(exchange, json, 200);
             } catch (NumberFormatException e) {
                 sendNotFound(exchange, "Неверный epic id");
-            } catch (IllegalArgumentException e) {
+            } catch (EpicNotFoundException e) {
                 // Эпик не найден → 404
                 sendNotFound(exchange, e.getMessage());
             }
@@ -123,7 +124,7 @@ public class EpicsHandler extends BaseHttpHandler {
                 manager.updateEpic(epic);
             }
             sendEmpty(exchange, 201);
-        } catch (IllegalArgumentException e) {
+        } catch (EpicNotFoundException  e) {
             String message = e.getMessage() != null ? e.getMessage() : ""; // защита от NPE
             sendNotFound(exchange, message);
         }

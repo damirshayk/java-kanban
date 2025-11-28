@@ -140,7 +140,7 @@ public class InMemoryTaskManager implements TaskManager {
         Objects.requireNonNull(subtask, "Subtask не может быть null");
         Epic epic = epics.get(subtask.getEpicId());
         if (epic == null) {
-            throw new IllegalArgumentException("Epic с id " + subtask.getEpicId() + " не найден.");
+            throw new EpicNotFoundException("Epic с id " + subtask.getEpicId() + " не найден.");
         }
 
         if (subtask.getEpicId() == subtask.getId()) {
@@ -263,19 +263,26 @@ public class InMemoryTaskManager implements TaskManager {
     }
 
     /**
-     * Обновляет существующий эпик и его статус.
+     * Обновляет существующий эпик.
+     * Обновляются только редактируемые поля: title и description.
+     * Статус и время эпика пересчитываются автоматически.
      *
      * @param epic эпик для обновления
-     * @throws IllegalArgumentException если epic == null
-     * @throws IllegalArgumentException если эпик с указанным id не существует
+     * @throws EpicNotFoundException если эпик с указанным id не найден
      */
     @Override
     public void updateEpic(Epic epic) {
-        Objects.requireNonNull(epic);
-        if (!epics.containsKey(epic.getId())) {
-            throw new IllegalArgumentException("Эпик с id " + epic.getId() + " не найден.");
+        Objects.requireNonNull(epic, "epic не может быть null");
+
+        Epic storedEpic = epics.get(epic.getId());
+        if (storedEpic == null) {
+            throw new EpicNotFoundException("Эпик с id " + epic.getId() + " не найден.");
         }
-        epics.put(epic.getId(), new Epic(epic)); // Клонируем объект
+
+        // Обновляем только редактируемые поля
+        storedEpic.setTitle(epic.getTitle());
+        storedEpic.setDescription(epic.getDescription());
+
         updateEpicStatus(epic);
         updateEpicTime(epic); // Обновляем время эпика
     }
@@ -336,13 +343,13 @@ public class InMemoryTaskManager implements TaskManager {
      * Удаляет эпик по id, а также все его подзадачи.
      *
      * @param id идентификатор эпика
-     * @throws IllegalArgumentException если эпик с указанным id не найден
+     * @throws EpicNotFoundException если эпик с указанным id не найден
      */
     @Override
     public void deleteEpicById(int id) {
         Epic epic = epics.remove(id);
         if (epic == null) {
-            throw new IllegalArgumentException("Эпик с id " + id + " не найден.");
+            throw new EpicNotFoundException("Эпик с id " + id + " не найден.");
         }
         // Удаляем все связанные подзадачи
         for (int subId : epic.getSubtaskIds()) {
@@ -429,13 +436,13 @@ public class InMemoryTaskManager implements TaskManager {
      *
      * @param epicId идентификатор эпика
      * @return список подзадач
-     * @throws IllegalArgumentException если эпик с указанным id не найден
+     * @throws EpicNotFoundException если эпик с указанным id не найден
      */
     @Override
     public List<Subtask> getSubtasksOfEpic(int epicId) {
         // Проверка существования эпика
         if (!epics.containsKey(epicId)) {
-            throw new IllegalArgumentException("Эпик с id " + epicId + " не найден.");
+            throw new EpicNotFoundException("Эпик с id " + epicId + " не найден.");
         }
         // Получение списка подзадач
         return epics.get(epicId)
